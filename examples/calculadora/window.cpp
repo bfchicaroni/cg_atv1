@@ -64,7 +64,6 @@ void Window::onPaintUI() {
       case CalcState::waitEqual:
         text = fmt::format("{} {} {} ", std::to_string(fstNumber), char(signal),
                            std::to_string(sndNumber));
-        ;
         break;
       case CalcState::Result:
         text = std::to_string(result);
