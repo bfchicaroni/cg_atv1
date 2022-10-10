@@ -47,14 +47,27 @@ void Window::onPaintUI() {
       std::string text;
       switch (m_calcState) {
       case CalcState::firstNumber:
-        text = "0"; // mt::format("{}'s turn", m_XsTurn ?
-                    // 'X' : 'O');
+        text = "0";
         break;
-      case CalcState::secondNumber:
-        text = std::to_string(number);
+      case CalcState::Signal:
+        text = std::to_string(fstNumber);
+        break;
+      case CalcState::Sum:
+        text = fmt::format("{} + ", std::to_string(fstNumber));
+        break;
+      case CalcState::Sub:
+        text = fmt::format("{} - ", std::to_string(fstNumber));
+        break;
+      case CalcState::Mult:
+        text = fmt::format("{} x ", std::to_string(fstNumber));
+        break;
+      case CalcState::waitEqual:
+        text = fmt::format("{} {} {} ", std::to_string(fstNumber), char(signal),
+                           std::to_string(sndNumber));
+        ;
         break;
       case CalcState::Result:
-        text = std::to_string(number);
+        text = std::to_string(result);
         break;
       }
       ImGui::SetCursorPosX(
@@ -71,7 +84,7 @@ void Window::onPaintUI() {
 
       // Use custom font
       ImGui::PushFont(m_font);
-      if (ImGui::BeginTable("Claculator", m_N)) {
+      if (ImGui::BeginTable("Calculator", m_N)) {
         for (auto i : iter::range(m_N)) {
           ImGui::TableNextRow();
           for (auto j : iter::range(m_N)) {
@@ -82,13 +95,22 @@ void Window::onPaintUI() {
             auto ch{m_board.at(offset)};
 
             switch (i) {
+            case 3:
+              if (j == 1) {
+                ch = '0';
+              } else if (j == 3) {
+                ch = '=';
+              }
+              break;
             case 2:
               if (j == 0) {
                 ch = '1';
               } else if (j == 1) {
                 ch = '2';
-              } else {
+              } else if (j == 2) {
                 ch = '3';
+              } else {
+                ch = 'x';
               }
               break;
             case 1:
@@ -96,8 +118,10 @@ void Window::onPaintUI() {
                 ch = '4';
               } else if (j == 1) {
                 ch = '5';
-              } else {
+              } else if (j == 2) {
                 ch = '6';
+              } else {
+                ch = '-';
               }
               break;
             case 0:
@@ -105,21 +129,47 @@ void Window::onPaintUI() {
                 ch = '7';
               } else if (j == 1) {
                 ch = '8';
-              } else {
+              } else if (j == 2) {
                 ch = '9';
+              } else {
+                ch = '+';
               }
               break;
             }
 
-            // Button text is ch followed by an ID in the format ##ij
             auto buttonText{fmt::format("{}", ch)};
             if (ImGui::Button(buttonText.c_str(), ImVec2(-1, buttonHeight))) {
               if (m_calcState == CalcState::firstNumber) {
-                number = gsl::narrow_cast<int>(ch) - 48;
-                m_calcState = CalcState::secondNumber;
-              } else if (m_calcState == CalcState::secondNumber) {
-                number = number + gsl::narrow_cast<int>(ch) - 48;
-                m_calcState = CalcState::Result;
+                fstNumber = gsl::narrow_cast<int>(ch) - 48;
+                m_calcState = CalcState::Signal;
+              } else if (m_calcState == CalcState::Signal) {
+                signal = gsl::narrow_cast<int>(ch);
+                switch (signal) {
+                case 43:
+                  m_calcState = CalcState::Sum;
+                  break;
+                case 45:
+                  m_calcState = CalcState::Sub;
+                  break;
+                case 120:
+                  m_calcState = CalcState::Mult;
+                  break;
+                }
+              } else if (m_calcState == CalcState::waitEqual) {
+                int equal = gsl::narrow_cast<int>(ch);
+                if (equal == 61) {
+                  m_calcState = CalcState::Result;
+                }
+              } else {
+                sndNumber = gsl::narrow_cast<int>(ch) - 48;
+                if (m_calcState == CalcState::Sum) {
+                  result = fstNumber + sndNumber;
+                } else if (m_calcState == CalcState::Sub) {
+                  result = fstNumber - sndNumber;
+                } else if (m_calcState == CalcState::Mult) {
+                  result = fstNumber * sndNumber;
+                }
+                m_calcState = CalcState::waitEqual;
               }
             }
           }
@@ -144,6 +194,6 @@ void Window::onPaintUI() {
 }
 
 void Window::clearMemory() {
-  number = 0;
+  fstNumber = 0;
   m_calcState = CalcState::firstNumber;
 }

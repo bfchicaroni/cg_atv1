@@ -9,13 +9,21 @@ protected:
   void onPaintUI() override;
 
 private:
-  static int const m_N{3}; // Board size is m_N x m_N
+  static int const m_N{4};
 
-  enum class CalcState { firstNumber, secondNumber, Result };
+  enum class CalcState {
+    firstNumber,
+    Signal,
+    Sum,
+    Sub,
+    Mult,
+    waitEqual,
+    Result
+  };
   CalcState m_calcState;
-  int number;
+  int fstNumber, signal, sndNumber, result;
 
-  std::array<char, m_N * m_N> m_board{}; // '\0', 'X' or 'O'
+  std::array<char, m_N * m_N> m_board{};
 
   ImFont *m_font{};
 
